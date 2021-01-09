@@ -1,0 +1,18 @@
+{
+  "name": "bgg-airtable-import-js",
+  "version": "1.0.0",
+  "description": "JS script to import a Boardgamegeek.com user's collection to Airtable.",
+  "main": "index.js",
+  "scripts": {
+    "reset": "RESET=true node index.js",
+    "start": "node index.js"
+  },
+  "author": "Kevin C Wongso <mailto:kevincwongso@users.noreply.github.com>",
+  "license": "MIT",
+  "dependencies": {
+    "airtable": "^0.10.1",
+    "axios": "^0.21.1",
+    "lodash": "^4.17.20",
+    "xml2js": "^0.4.23"
+  }
+}
