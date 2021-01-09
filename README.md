@@ -36,7 +36,7 @@ This script will only import games and expansions marked as "Owned" in your BGG 
 The script will also only add new boardgames and expansions that aren't already added to the Airtable base.
 To refresh the table by deleting all existing entries, and then importing the whole collection from zero again, use:
 ```
-npm reset
+npm run reset
 ```
 
 ## FAQs (Frequently Asked Questions)
