@@ -1,47 +1,14 @@
 const fs = require('fs')
-const axios = require('axios')
 const xml2js = require('xml2js')
 const Airtable = require('airtable')
 const _ = require('lodash')
 
-const BGG_XML_API_URL = 'https://www.boardgamegeek.com/xmlapi2'
-const XML_RETRY_DELAY_SECONDS = 1
-const XML_MAX_RETRY = 10
+const {
+	fetchBGG,
+	sanitizeDescription,
+} = require('./utils')
+
 const AIRTABLE_API_CHUNKS = 10
-
-async function fetchBGG(path, params = {}) {
-	let retry = true
-	let response = null
-	let tries = 0
-	while(retry) {
-		try {
-			response = await axios.get(`${BGG_XML_API_URL}${path}`, { params })
-		} catch(err) {
-			console.log('--> ERROR - fetchBGG request throws error')
-			console.log(err)
-			console.log(JSON.stringify(err.response.data,null,2))
-			return null
-		}
-
-		if (response.status === 202) {
-			console.log(`--> ACCEPTED (202) - retrying in ${XML_RETRY_DELAY_SECONDS} seconds`)
-			await new Promise(resolve => setTimeout(resolve, XML_RETRY_DELAY_SECONDS*1000)) // sleep
-			tries += 1
-		} else if (response.status === 200) {
-			retry = false
-		} else {
-			console.log(`--> ERROR - fetchBGG request returns unexpected status (${response.status})`)
-			console.log(JSON.stringify(response.data,null,2))
-			return null
-		}
-
-		if (tries >= XML_MAX_RETRY) {
-			console.log(`--> MAX RETRIES - reached max retry limit of ${XML_MAX_RETRY} times`)
-			return null
-		}
-	}
-	return response.data
-}
 
 async function main() {
 	console.log('* reading values.json')
@@ -137,7 +104,7 @@ async function main() {
 			for (let link of t.link) {
 				if (link.$.type === 'boardgamecategory' || link.$.type === 'boardgamemechanic') {
 					tags.push(link.$.value)
-				} else if (link.$.type === 'boardgameintegration' && boardgameIds.includes(link.$.id)){
+				} else if (link.$.type === 'boardgameintegration' && boardgameIds.includes(link.$.id)) {
 					if (!integrationLinks[t.$.id]) { integrationLinks[t.$.id] = []}
 					integrationLinks[t.$.id].push(link.$.id)
 				}
@@ -149,11 +116,11 @@ async function main() {
 					Images: [
 						{ url: t.image[0] }
 					],
+					Description: sanitizeDescription(t.description[0]),
 					"Min Players": parseInt(t.minplayers[0].$.value),
 					"Max Players": parseInt(t.maxplayers[0].$.value),
 					"Min Playing Time": parseInt(t.minplaytime[0].$.value),
 					"Max Playing Time": parseInt(t.maxplaytime[0].$.value),
-					Description: t.description[0].replace(/[^\x00-\x7F]/g, ""),
 					"BGG Tags": tags,
 				}
 			}
@@ -204,21 +171,24 @@ async function main() {
 					expansionLinks[t.$.id].push(link.$.id)
 				}
 			}
-			return {
+			let payload = {
 				fields: {
 					ID: t.$.id,
 					Name: t.name[0].$.value,
-					Images: [
-						{ url: t.image[0] }
-					],
+					Description: sanitizeDescription(t.description[0]),
 					"Min Players": parseInt(t.minplayers[0].$.value),
 					"Max Players": parseInt(t.maxplayers[0].$.value),
 					"Min Playing Time": parseInt(t.minplaytime[0].$.value),
 					"Max Playing Time": parseInt(t.maxplaytime[0].$.value),
-					Description: t.description[0].replace(/[^\x00-\x7F]/g, ""),
 					"BGG Tags": tags,
 				}
 			}
+			if (t.image && t.image.length) {
+				payload.fields.Images = [
+					{ url: t.image[0] }
+				]
+			}
+			return payload
 		})
 		for (const chunk of _.chunk(expansionThings, AIRTABLE_API_CHUNKS)) {
 			await expansionsTable.create(chunk, { typecast: true })
