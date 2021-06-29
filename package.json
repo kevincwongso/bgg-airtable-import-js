@@ -5,7 +5,10 @@
   "main": "index.js",
   "scripts": {
     "reset": "RESET=true node index.js",
-    "start": "node index.js"
+    "start": "node index.js",
+    "inspect": "SCRIPT=inspect node scripts.js",
+    "inspect-sanitized": "SCRIPT=inspect-sanitized node scripts.js",
+    "check-expansions": "SCRIPT=check-expansions node scripts.js"
   },
   "author": "Kevin C Wongso <mailto:kevincwongso@users.noreply.github.com>",
   "license": "MIT",
